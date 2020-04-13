@@ -2,44 +2,55 @@ package com.restful.RestfulApi.service;
 
 import com.restful.RestfulApi.error.InvalidTodoIdException;
 import com.restful.RestfulApi.model.Todo;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class TodoStorage {
-    AtomicInteger incrementKey = new AtomicInteger(1);
-    Map<Integer, Todo> todos = new HashMap<>(20);
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
-    public Map<Integer, Todo> getTodos() {
-        return Collections.unmodifiableMap(todos);
+    public List< Todo> getTodos() {
+        return jdbcTemplate.query("select * from todo",
+                BeanPropertyRowMapper.newInstance(Todo.class));
     }
 
     public Todo getTodo(Integer id) throws InvalidTodoIdException {
-        if (!todos.containsKey(id)) {
+        Todo todo = jdbcTemplate.queryForObject("SELECT * FROM todo WHERE id = ?", new Object[]{id},
+                BeanPropertyRowMapper.newInstance(Todo.class));
+        if (todo == null) {
             throw new InvalidTodoIdException();
         }
-        return todos.get(id);
+        return todo;
     }
 
     public Todo addTodo(Todo todo) {
-        Todo newTodo = new Todo(incrementKey.getAndAdd(1), todo.getMessage());
-        todos.put(newTodo.getId(), newTodo);
-        return newTodo;
+        SimpleJdbcInsert insert = new SimpleJdbcInsert(jdbcTemplate).withTableName("todo").usingGeneratedKeyColumns("id");
+        Map<String, Object> insertValue = new HashMap<>();
+        insertValue.put("message", todo.getMessage());
+
+        Number number = insert.executeAndReturnKey(insertValue);
+        return new Todo(number.intValue(), todo.getMessage());
     }
 
     public void replace(Todo todo) throws InvalidTodoIdException {
-        if (!todos.containsKey(todo.getId())) {
+        // update 1 -> success 0 -> error
+        int update = jdbcTemplate.update("UPDATE todo SET message = ? WHERE id = ? ", todo.getMessage(), todo.getId());
+        if (update <= 0) {
             throw new InvalidTodoIdException(todo.getId());
         }
-        todos.replace(todo.getId(), todo);
     }
 
     public void removeTodo(Integer id) throws InvalidTodoIdException {
-        if (!todos.containsKey(id)) {
-            throw new InvalidTodoIdException();
+        // update 1 -> success 0 -> error
+        int update = jdbcTemplate.update("DELETE FROM todo WHERE id = ?", id);
+        if (update <= 0) {
+            throw new InvalidTodoIdException(id);
         }
-        todos.remove(id);
     }
 }

@@ -24,7 +24,7 @@ public class TodoController {
     @GetMapping("/todos")
     @ApiOperation("Returns the todos stored to the server")
     public Collection<Todo> getAllTodos() {
-        return todoStore.getTodos().values();
+        return todoStore.getTodos();
     }
 
     @PostMapping(value = "/todos")
