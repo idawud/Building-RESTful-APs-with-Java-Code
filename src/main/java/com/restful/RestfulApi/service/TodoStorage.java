@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TodoStorage {
-    AtomicInteger incrementKey = new AtomicInteger(0);
+    AtomicInteger incrementKey = new AtomicInteger(1);
     Map<Integer, Todo> todos = new HashMap<>(20);
 
     public Map<Integer, Todo> getTodos() {
