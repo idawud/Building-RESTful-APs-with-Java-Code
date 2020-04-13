@@ -16,6 +16,7 @@ import java.net.URI;
 
 @RestController
 @Api
+@CrossOrigin(origins = "*")
 public class TodoController {
     @Autowired
     private TodoStorage todoStore;
